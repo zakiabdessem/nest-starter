@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Scanner Client</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status {
+            margin: 1.5rem 0;
+            padding: 1rem;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .status.show {
+            display: block;
+        }
+
+        .status.pending {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+        }
+
+        .status.processing {
+            background: #cfe2ff;
+            border-left: 4px solid #0d6efd;
+        }
+
+        .status.completed {
+            background: #d1e7dd;
+            border-left: 4px solid #198754;
+        }
+
+        .status.failed {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+        }
+
+        .logs {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1.5rem;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .log-info {
+            background: #e7f3ff;
+            color: #004085;
+        }
+
+        .log-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .log-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .results {
+            margin-top: 1.5rem;
+        }
+
+        .port-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .port-card {
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .port-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .port-service {
+            color: #666;
+            margin-top: 0.25rem;
+        }
+
+        .connection-status {
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .connected {
+            background: #d1e7dd;
+            color: #198754;
+        }
+
+        .disconnected {
+            background: #f8d7da;
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Network Scanner</h1>
+            <p>Real-time port scanning with WebSocket updates</p>
+        </div>
+
+        <div class="content">
+            <div id="connectionStatus" class="connection-status disconnected">
+                Disconnected from server
+            </div>
+
+            <div class="form-group">
+                <label for="target">Target URL, Domain, or IP:</label>
+                <input 
+                    type="text" 
+                    id="target" 
+                    placeholder="http://testphp.vulnweb.com/" 
+                    value="http://testphp.vulnweb.com/"
+                >
+            </div>
+
+            <button id="scanBtn" onclick="startScan()">Start Scan</button>
+
+            <div id="status" class="status">
+                <strong id="statusText"></strong>
+            </div>
+
+            <div class="logs" id="logs"></div>
+
+            <div class="results" id="results"></div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io('http://localhost:3000', {
+            transports: ['websocket']
+        });
+
+        let currentScanId = null;
+
+        socket.on('connect', () => {
+            updateConnectionStatus(true);
+            addLog('Connected to server', 'success');
+        });
+
+        socket.on('disconnect', () => {
+            updateConnectionStatus(false);
+            addLog('Disconnected from server', 'error');
+        });
+
+        socket.on('scan-started', (data) => {
+            addLog(`Scan started for ${data.target}`, 'info');
+            updateStatus('processing', 'Scanning in progress...');
+        });
+
+        socket.on('dns-resolved', (data) => {
+            addLog(`DNS resolved: ${data.resolvedIp}`, 'success');
+        });
+
+        socket.on('scanning-ports', (data) => {
+            addLog(`Scanning ports on ${data.resolvedIp}...`, 'info');
+        });
+
+        socket.on('scan-complete', (data) => {
+            addLog(`Scan completed! Found ${data.ports.length} open ports`, 'success');
+            updateStatus('completed', 'Scan completed successfully!');
+            displayResults(data);
+        });
+
+        socket.on('scan-failed', (data) => {
+            addLog(`Scan failed: ${data.error}`, 'error');
+            updateStatus('failed', `Scan failed: ${data.error}`);
+        });
+
+        const startScan = () => {
+            const target = document.getElementById('target').value.trim();
+            
+            if (!target) {
+                alert('Please enter a target URL, domain, or IP');
+                return;
+            }
+
+            // Clear previous results
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('logs').innerHTML = '';
+            
+            addLog(`Initiating scan for ${target}...`, 'info');
+            updateStatus('pending', 'Initiating scan...');
+
+            socket.emit('start-scan', { target }, (response) => {
+                if (response.success) {
+                    currentScanId = response.data.id;
+                    addLog(`Scan ID: ${currentScanId}`, 'info');
+                    socket.emit('join-scan-room', { scanId: currentScanId });
+                } else {
+                    addLog(`Error: ${response.error}`, 'error');
+                    updateStatus('failed', `Error: ${response.error}`);
+                }
+            });
+        };
+
+        const updateConnectionStatus = (connected) => {
+            const statusEl = document.getElementById('connectionStatus');
+            if (connected) {
+                statusEl.textContent = '✓ Connected to server';
+                statusEl.className = 'connection-status connected';
+            } else {
+                statusEl.textContent = '✗ Disconnected from server';
+                statusEl.className = 'connection-status disconnected';
+            }
+        };
+
+        const updateStatus = (type, message) => {
+            const statusEl = document.getElementById('status');
+            const statusText = document.getElementById('statusText');
+            statusEl.className = `status show ${type}`;
+            statusText.textContent = message;
+        };
+
+        const addLog = (message, type = 'info') => {
+            const logsEl = document.getElementById('logs');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            logsEl.appendChild(logEntry);
+            logsEl.scrollTop = logsEl.scrollHeight;
+        };
+
+        const displayResults = (data) => {
+            const resultsEl = document.getElementById('results');
+            
+            if (data.ports.length === 0) {
+                resultsEl.innerHTML = '<p style="text-align: center; color: #666; margin-top: 1rem;">No open ports found</p>';
+                return;
+            }
+
+            let html = '<h3>Open Ports:</h3><div class="port-list">';
+            
+            data.ports.forEach(port => {
+                html += `
+                    <div class="port-card">
+                        <div class="port-number">${port.port}</div>
+                        <div class="port-service">${port.service}</div>
+                        <div class="port-service">${port.protocol} - ${port.state}</div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            resultsEl.innerHTML = html;
+        };
+
+        // Allow Enter key to start scan
+        document.getElementById('target').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                startScan();
+            }
+        });
+    </script>
+</body>
+</html>

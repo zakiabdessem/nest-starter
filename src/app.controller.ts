@@ -21,4 +21,8 @@ export class AppController {
     this.notificationsGateway.sendNotificationFire(data);
     return { status: 'Notification sent' };
   }
+
+  getHello(): string {
+    return this.appService.getHello();
+  }
 }
