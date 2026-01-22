@@ -12,8 +12,47 @@ export const SCANNER_CONFIG = {
   niktoOptions: {
     timeout: 60000, // 1 minute max in milliseconds
     tuning: '1,2,3,4', // Safe checks only
-    maxTime: 30, // 1 minutes per scan (Nikto uses seconds)
+    maxTime: 30, // 30 seconds per scan (Nikto uses seconds)
     tempDir: '/tmp/nikto-scans', // Directory for temp CSV files
+  },
+  nucleiOptions: {
+    timeout: 300000, // 5 minutes per category in milliseconds
+    rateLimit: 10, // requests per second
+    requestTimeout: 10, // timeout per request in seconds
+    outputDir: '/tmp/nuclei-scans', // Directory for temp JSON files
+    categories: {
+      cves: {
+        useTag: true,
+        tag: 'cves',
+        displayName: 'CVEs',
+        description: 'Common Vulnerabilities & Exposures',
+      },
+      misconfiguration: {
+        useTag: false,
+        templatePath: '~/.local/nuclei-templates/http/misconfiguration/',
+        displayName: 'Misconfigurations',
+        description: 'Server & Application Misconfigurations',
+      },
+      exposures: {
+        useTag: false,
+        templatePath: '~/.local/nuclei-templates/http/exposures/',
+        displayName: 'Exposures',
+        description: 'Sensitive Data & Information Disclosure',
+      },
+      technologies: {
+        useTag: false,
+        templatePath: '~/.local/nuclei-templates/http/technologies/',
+        displayName: 'Technologies',
+        description: 'Technology Stack Fingerprinting',
+      },
+    },
+    severities: {
+      info: { displayName: 'Info', color: 'blue' },
+      low: { displayName: 'Low', color: 'green' },
+      medium: { displayName: 'Medium', color: 'yellow' },
+      high: { displayName: 'High', color: 'orange' },
+      critical: { displayName: 'Critical', color: 'red' },
+    },
   },
   webPorts: [80, 443, 8080, 8443, 3000, 5000, 8000],
   vulnerabilityScanning: {

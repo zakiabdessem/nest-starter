@@ -11,6 +11,9 @@ export class Scan {
   @Column({ nullable: true })
   resolvedIp: string;
 
+  @Column({ type: 'text', default: 'quick' })
+  scanType: 'quick' | 'heavy'; // Type of scan performed
+
   @Column({ type: 'text', nullable: true })
   ports: string; // JSON array of scan results stored as text
 
@@ -24,7 +27,13 @@ export class Scan {
   error: string; // Error message if scan failed
 
   @Column({ type: 'text', nullable: true })
-  vulnerabilities: string; // JSON array of Nikto vulnerability findings
+  vulnerabilities: string; // JSON array of Nikto vulnerability findings (quick scan)
+
+  @Column({ type: 'text', nullable: true })
+  nucleiResults: string; // JSON array of Nuclei findings (heavy scan)
+
+  @Column({ type: 'text', nullable: true })
+  heavyScanOptions: string; // JSON object storing selected categories and severities
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;

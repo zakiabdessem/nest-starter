@@ -3,7 +3,9 @@ import { NiktoScannerService } from './nikto-scanner.service';
 import { exec } from 'child_process';
 import { promises as fs } from 'fs';
 
-jest.mock('child_process');
+jest.mock('child_process', () => ({
+  exec: jest.fn(),
+}));
 jest.mock('fs', () => ({
   promises: {
     readFile: jest.fn(),

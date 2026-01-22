@@ -7,6 +7,7 @@ import { ScannerService } from './services/scanner.service';
 import { DnsResolverService } from './services/dns-resolver.service';
 import { NmapScannerService } from './services/nmap-scanner.service';
 import { NiktoScannerService } from './services/nikto-scanner.service';
+import { NucleiScannerService } from './services/nuclei-scanner.service';
 import { ScannerGateway } from './gateways/scanner.gateway';
 import { ScanProcessor } from './processors/scan.processor';
 
@@ -23,6 +24,7 @@ import { ScanProcessor } from './processors/scan.processor';
     DnsResolverService,
     NmapScannerService,
     NiktoScannerService,
+    NucleiScannerService,
     ScannerGateway,
     ScanProcessor,
   ],

@@ -5,7 +5,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { Scan } from '../entities/scan.entity';
 import { CreateScanDto } from '../dtos/create-scan.dto';
-import { ScanResultDto, PortScanResult, VulnerabilityResult } from '../dtos/scan-result.dto';
+import { ScanResultDto, PortScanResult, VulnerabilityResult, NucleiScanResult } from '../dtos/scan-result.dto';
 import { SCANNER_CONFIG } from '../../../config/scanner.config';
 
 @Injectable()
@@ -21,9 +21,22 @@ export class ScannerService {
    * Create a new scan and add it to the queue
    */
   async createScan(createScanDto: CreateScanDto): Promise<ScanResultDto> {
+    // Determine scan type (default to 'quick')
+    const scanType = createScanDto.scanType || 'quick';
+
+    // Prepare heavy scan options if provided
+    const heavyScanOptions = scanType === 'heavy' && createScanDto.categories && createScanDto.severities
+      ? JSON.stringify({
+          categories: createScanDto.categories,
+          severities: createScanDto.severities,
+        })
+      : null;
+
     // Create scan record
     const scan = this.scanRepository.create({
       target: createScanDto.target,
+      scanType,
+      heavyScanOptions,
       status: 'pending',
     });
 
@@ -75,12 +88,13 @@ export class ScannerService {
   private mapToDto(scan: Scan): ScanResultDto {
     let ports: PortScanResult[] = [];
     let vulnerabilities: VulnerabilityResult[] = [];
+    let nucleiResults: NucleiScanResult[] = [];
+    let heavyScanOptions: { categories: string[]; severities: string[] } | undefined;
 
     if (scan.ports) {
       try {
         ports = JSON.parse(scan.ports);
       } catch (error) {
-        // If parsing fails, return empty array
         ports = [];
       }
     }
@@ -89,8 +103,23 @@ export class ScannerService {
       try {
         vulnerabilities = JSON.parse(scan.vulnerabilities);
       } catch (error) {
-        // If parsing fails, return empty array
         vulnerabilities = [];
+      }
+    }
+
+    if (scan.nucleiResults) {
+      try {
+        nucleiResults = JSON.parse(scan.nucleiResults);
+      } catch (error) {
+        nucleiResults = [];
+      }
+    }
+
+    if (scan.heavyScanOptions) {
+      try {
+        heavyScanOptions = JSON.parse(scan.heavyScanOptions);
+      } catch (error) {
+        heavyScanOptions = undefined;
       }
     }
 
@@ -98,8 +127,11 @@ export class ScannerService {
       id: scan.id,
       target: scan.target,
       resolvedIp: scan.resolvedIp,
+      scanType: scan.scanType || 'quick',
       ports,
       vulnerabilities,
+      nucleiResults,
+      heavyScanOptions,
       status: scan.status,
       error: scan.error,
       createdAt: scan.createdAt,

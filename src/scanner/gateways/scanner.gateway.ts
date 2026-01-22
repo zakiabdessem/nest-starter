@@ -113,4 +113,32 @@ export class ScannerGateway {
   emitVulnerabilityScanComplete(scanId: string, data: any) {
     this.emitScanUpdate(scanId, 'vulnerability-scan-complete', data);
   }
+
+  /**
+   * Emit heavy scan started event
+   */
+  emitHeavyScanStarted(scanId: string, data: any) {
+    this.emitScanUpdate(scanId, 'heavy-scan-started', data);
+  }
+
+  /**
+   * Emit category scan progress event
+   */
+  emitCategoryScanProgress(scanId: string, data: any) {
+    this.emitScanUpdate(scanId, 'category-scan-progress', data);
+  }
+
+  /**
+   * Emit category scan complete event
+   */
+  emitCategoryScanComplete(scanId: string, data: any) {
+    this.emitScanUpdate(scanId, 'category-scan-complete', data);
+  }
+
+  /**
+   * Emit heavy scan complete event
+   */
+  emitHeavyScanComplete(scanId: string, data: any) {
+    this.emitScanUpdate(scanId, 'heavy-scan-complete', data);
+  }
 }
